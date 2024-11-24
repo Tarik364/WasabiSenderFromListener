@@ -158,43 +158,50 @@ namespace WasabiSenderFromListener
                 return;
             }
             IsActive = true;
-
-            newmodelid = modelid;
-            if (newmodelid != oldmodelid)       /////YENİ İSE ÇALIŞ
+            try
             {
-                if (olddatetime.ToString("dd-MM-yyyy") != DateTime.Now.ToString("dd-MM-yyyy"))
+                newmodelid = modelid;
+                if (newmodelid != oldmodelid)       /////YENİ İSE ÇALIŞ
                 {
-                    olddatetime = DateTime.Now;             //////Gün değişikliği yaşandı servis kapanmamıştı ve bugüne eşitleyip yeni klasör oluşturuyoruz wasabide.
-                    await imageSenderClass.CreateFolderAsync(Customer, olddatetime.ToString("dd-MM-yyyy"), "0");
+                    if (olddatetime.ToString("dd-MM-yyyy") != DateTime.Now.ToString("dd-MM-yyyy"))
+                    {
+                        olddatetime = DateTime.Now;             //////Gün değişikliği yaşandı servis kapanmamıştı ve bugüne eşitleyip yeni klasör oluşturuyoruz wasabide.
+                        await imageSenderClass.CreateFolderAsync(Customer, olddatetime.ToString("dd-MM-yyyy"), "0");
+                    }
+                    await imageSenderClass.CreateFolderAsync(Customer, olddatetime.ToString("dd-MM-yyyy"), newmodelid);
+                    oldmodelid = newmodelid;
+                    JsonWrite(newmodelid);
+
+                    FilePathFront = FilePathFile + $"\\{newmodelid}\\test\\front";
+                    FilePathBack = FilePathFile + $"\\{newmodelid}\\test\\back";
+
+                    logger.WriteLog("Front yolu ---" + FilePathFront + "-----" + "Back yolu ---" + FilePathBack);
+
+
+                    _ = Task.Run(() =>
+                    {
+                        ProcessFile(FilePathFront, "Front");     ////FRONT KLASÖRÜNÜ BAS
+                        ProcessFile(FilePathBack, "Back");       ////BACK KLASÖRÜNÜ BAS
+                    });
                 }
-                await imageSenderClass.CreateFolderAsync(Customer, olddatetime.ToString("dd-MM-yyyy"), newmodelid);
-                oldmodelid = newmodelid;
-                JsonWrite(newmodelid);
-
-                FilePathFront = FilePathFile + $"\\{newmodelid}\\test\\front";
-                FilePathBack = FilePathFile + $"\\{newmodelid}\\test\\back";
-
-                logger.WriteLog("Front yolu ---" + FilePathFront + "-----" + "Back yolu ---" + FilePathBack);
-
-
-                _ = Task.Run(() =>
+                else
                 {
-                    ProcessFile(FilePathFront, "Front");     ////FRONT KLASÖRÜNÜ BAS
-                    ProcessFile(FilePathBack, "Back");       ////BACK KLASÖRÜNÜ BAS
-                });
+                    FilePathFront = FilePathFile + $"\\{newmodelid}\\test\\front";
+                    FilePathBack = FilePathFile + $"\\{newmodelid}\\test\\back";
+
+                    logger.WriteLog("Front yolu ---" + FilePathFront + "-----" + "Back yolu ---" + FilePathBack);
+                    _ = Task.Run(() =>
+                    {
+                        ProcessFile(FilePathFront, "Front");     ////FRONT KLASÖRÜNÜ BAS
+                        ProcessFile(FilePathBack, "Back");       ////BACK KLASÖRÜNÜ BAS
+                    });
+                }
             }
-            else
+            catch (Exception ex)
             {
-                FilePathFront = FilePathFile + $"\\{newmodelid}\\test\\front";
-                FilePathBack = FilePathFile + $"\\{newmodelid}\\test\\back";
-
-                logger.WriteLog("Front yolu ---" + FilePathFront + "-----" + "Back yolu ---" + FilePathBack);
-                _ = Task.Run(() =>
-                {
-                    ProcessFile(FilePathFront, "Front");     ////FRONT KLASÖRÜNÜ BAS
-                    ProcessFile(FilePathBack, "Back");       ////BACK KLASÖRÜNÜ BAS
-                });
+                logger.WriteLog("Klasör ü buluta taşımada problem yaşıyorum. HATA------" + ex.Message);
             }
+
             IsActive = false;
         }
         private async void ProcessFile(string filePath, string ImageType)
